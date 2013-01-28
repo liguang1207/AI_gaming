@@ -20,6 +20,7 @@ namespace detector
         SpriteFont text; 
         SpriteBatch spriteBatch;
         Texture2D sprite;
+        Texture2D sprite2;
         Rectangle spriteRectangle;
         Texture2D dot;
         Texture2D rec;
@@ -30,6 +31,7 @@ namespace detector
 
         float rotation;
         Vector2 spritePosition = new Vector2(50f,50f);
+        Vector2 spritePosition2 = new Vector2(100f, 100f);
         Vector2 spriteCenter;
         Vector2 spriteVelocity;
        
@@ -78,7 +80,7 @@ namespace detector
             
             sprite = Content.Load<Texture2D>("Circle");
             spriteRectangle = new Rectangle((int)spritePosition.X, (int)spritePosition.Y, sprite.Width, sprite.Height);
-
+            sprite2 = Content.Load<Texture2D>("Circle");
             rec = Content.Load<Texture2D>("rectangle");
             objRec = new Rectangle(300, 300, rec.Width, rec.Height);
 
@@ -151,7 +153,11 @@ namespace detector
             {
                 rotation += .1f;
             }
-
+            if (Vector2.Distance(spritePosition,spritePosition2) < sprite.Width)
+            {
+                spriteVelocity.X = -(float)Math.Cos(rotation) * rotationVelocity;
+                spriteVelocity.Y = -(float)Math.Sin(rotation) * rotationVelocity;
+            }
             vertices[0].Position = new Vector3(spritePosition.X, spritePosition.Y, 0);
             vertices[0].Color = Color.Violet;
             vertices[1].Position = new Vector3((float)Math.Cos(rotation) * 100+spritePosition.X, (float)Math.Sin(rotation) *100 + spritePosition.Y, 0);
@@ -164,8 +170,21 @@ namespace detector
             vertices[4].Color = Color.Violet;
             vertices[5].Position = new Vector3((float)Math.Cos(rotation-.5) * 100 + spritePosition.X, (float)Math.Sin(rotation-.5) * 100 + spritePosition.Y, 0);
             vertices[5].Color = Color.Violet;
-
+           
             base.Update(gameTime);
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+            basicEffect.CurrentTechnique.Passes[0].Apply();
+            spriteBatch.Begin();
+            //spriteBatch.Draw(sprite, spritePosition, null, Color.White, rotation, spriteCenter, 1f, SpriteEffects.None, 0);
+            //spriteBatch.Draw(sprite2, spritePosition2, null, Color.White, rotation, spriteCenter, 1f, SpriteEffects.None, 0);
+            //spriteBatch.Draw(rec, objRec, Color.White);
+
+            //spriteBatch.DrawString(text,objRec.Bottom.ToString(),new Vector2(100f,100f),Color.Red);
+
+            //spriteBatch.DrawString(text, bound.X.ToString(), new Vector2(100f, 150f), Color.Red);
+            spriteBatch.DrawString(text, rotation.ToString(), new Vector2(100f, 200f), Color.Red);
+            //spriteBatch.DrawString(text, "angle degree " + (Math.Abs(rotation * 180 / Math.PI) % 360).ToString(), new Vector2(100f, 250f), Color.Red);
+            spriteBatch.End();
         }
 
         /// <summary>
@@ -174,19 +193,21 @@ namespace detector
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            
+
             GraphicsDevice.Clear(Color.CornflowerBlue);
             basicEffect.CurrentTechnique.Passes[0].Apply();
-            graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.LineList, vertices, 0, 3);
-            spriteBatch.Begin();
+           // graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.LineList, vertices, 0, 3);
+            /*spriteBatch.Begin();
             spriteBatch.Draw(sprite, spritePosition,null, Color.White, rotation,spriteCenter,1f,SpriteEffects.None,0);
+            spriteBatch.Draw(sprite2, spritePosition2, null, Color.White, rotation, spriteCenter, 1f, SpriteEffects.None, 0);
             spriteBatch.Draw(rec, objRec, Color.White);
             
             //spriteBatch.DrawString(text,objRec.Bottom.ToString(),new Vector2(100f,100f),Color.Red);
-            spriteBatch.DrawString(text, spritePosition.ToString(), new Vector2(100f, 100f), Color.Red);
+            
             spriteBatch.DrawString(text, bound.X.ToString(), new Vector2(100f, 150f), Color.Red);
-            spriteBatch.DrawString(text, bound.X.ToString(), new Vector2(100f, 200f), Color.Red);
-            spriteBatch.End();
+            spriteBatch.DrawString(text, rotation.ToString(), new Vector2(100f, 200f), Color.Red);
+            spriteBatch.DrawString(text, "angle degree "+(Math.Abs(rotation*180/Math.PI)%360).ToString(), new Vector2(100f, 250f), Color.Red);
+            spriteBatch.End();*/
             // TODO: Add your drawing code here
 
             base.Draw(gameTime);
