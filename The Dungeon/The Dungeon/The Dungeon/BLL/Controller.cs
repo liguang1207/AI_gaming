@@ -46,11 +46,11 @@ namespace The_Dungeon.BLL
 
             if (keyboard.IsKeyDown(Keys.Left))
             {
-                pActor.Rotation -= .1f;
+                pActor.Rotation = (float)(pActor.Rotation - .1) % (float)(2 * Math.PI);
             }
             if (keyboard.IsKeyDown(Keys.Right))
             {
-                pActor.Rotation += .1f;
+                pActor.Rotation = (float)( (pActor.Rotation + .1)-2 * Math.PI) % (float)(2 * Math.PI);
             }
 
             pActor.Velocity = Velocity;

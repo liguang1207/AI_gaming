@@ -13,7 +13,7 @@ namespace The_Dungeon.BLL
     class AgentSensor: Sensor
     {
         private List<Vector2> EndPoints = new List<Vector2>();
-        private const float MAX_RANGE = 64;
+        private const float MAX_RANGE = 100;
 
         public AgentSensor(ref List<Actor> aWorldActors, Actor aHost)
             : base(ref aWorldActors, aHost)

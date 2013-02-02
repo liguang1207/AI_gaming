@@ -227,9 +227,13 @@ namespace The_Dungeon
             {
                 pPlayer.Sensor = new AgentSensor(ref WorldActors, pPlayer);
             }
+            else if (pPlayer.Sensor is AgentSensor)
+            {
+                pPlayer.Sensor = new PieSensor(ref WorldActors, pPlayer, DebugFont);
+            }
             else
             {
-                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer);
+                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer );
             }
         }
     }

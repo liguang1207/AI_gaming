@@ -59,6 +59,9 @@
     <PlatformTarget>x86</PlatformTarget>
     <XnaCompressContent>true</XnaCompressContent>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>The_Dungeon.Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DrawingHelper">
       <HintPath>..\..\..\..\..\..\Downloads\DrawingHelper.dll</HintPath>
@@ -115,8 +118,10 @@
     <Compile Include="BLL\AgentSensor.cs" />
     <Compile Include="BLL\AIController.cs" />
     <Compile Include="BLL\BlockingActor.cs" />
+    <Compile Include="BLL\PieSensor.cs" />
     <Compile Include="BLL\Pawn.cs" />
     <Compile Include="BLL\Controller.cs" />
+    <Compile Include="BLL\Ray2D.cs" />
     <Compile Include="BLL\Sensor.cs" />
     <Compile Include="BLL\WallSensor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
