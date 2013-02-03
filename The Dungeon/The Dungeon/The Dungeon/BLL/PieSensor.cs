@@ -13,7 +13,7 @@ namespace The_Dungeon.BLL
     class PieSensor : Sensor
     {
         private List<Vector2> EndPoints = new List<Vector2>();
-        private const float MAX_RANGE = 200;
+        private const float MAX_RANGE = 150;
         private List<Vector2> EnemyQuad1 = new List<Vector2>();
         private List<Vector2> EnemyQuad2 = new List<Vector2>();
         private List<Vector2> EnemyQuad3 = new List<Vector2>();
@@ -26,16 +26,20 @@ namespace The_Dungeon.BLL
        
         SpriteFont DebugFont;
 
-        
 
-        double degrees, DotProdDenom, DotprodNum;
+
+        double radian, radian90;
         
        
         double test;
         double test2;
         Vector2 TempVector = new Vector2();
+        Vector2 Vector90Degree = new Vector2();
+
         Vector2 VectorA = new Vector2();
         Vector2 VectorB = new Vector2();
+
+        Vector2 VectorA90 = new Vector2();
         
         public PieSensor(ref List<Actor> aWorldActors, Actor aHost, SpriteFont aDebugFont)
             : base(ref aWorldActors, aHost)
@@ -58,10 +62,10 @@ namespace The_Dungeon.BLL
             
            
            //dividing the quadrants of the pie sensor
-            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + Math.PI / 4) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation + Math.PI / 4) * 100 + pHost.Position.Y));
-            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 3*Math.PI / 4) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 3*Math.PI / 4) * 100 + pHost.Position.Y));
-            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 5*Math.PI / 4) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 5* Math.PI / 4) * 100 + pHost.Position.Y));
-            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 7 * Math.PI / 4) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 7 * Math.PI / 4) * 100 + pHost.Position.Y));
+            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + Math.PI / 4) * MAX_RANGE + pHost.Position.X, (float)Math.Sin(pHost.Rotation + Math.PI / 4) * MAX_RANGE + pHost.Position.Y));
+            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 3 * Math.PI / 4) * MAX_RANGE + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 3 * Math.PI / 4) * MAX_RANGE + pHost.Position.Y));
+            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 5 * Math.PI / 4) * MAX_RANGE + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 5 * Math.PI / 4) * MAX_RANGE + pHost.Position.Y));
+            EndPoints.Add(new Vector2((float)Math.Cos(pHost.Rotation + 7 * Math.PI / 4) * MAX_RANGE + pHost.Position.X, (float)Math.Sin(pHost.Rotation + 7 * Math.PI / 4) * MAX_RANGE + pHost.Position.Y));
 
             
                
@@ -83,23 +87,30 @@ namespace The_Dungeon.BLL
                         //find a random point that the heading is point to
                         TempVector = new Vector2((float)Math.Cos(pHost.Rotation) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation) * 100 + pHost.Position.Y);
                         
+                        //Made a point that is 90 degrees of the heading - this is used for testing the angles for the two sides 
+                        Vector90Degree = new Vector2((float)Math.Cos(pHost.Rotation+(Math.PI/2)) * 100 + pHost.Position.X, (float)Math.Sin(pHost.Rotation+(Math.PI/2)) * 100 + pHost.Position.Y);
+                        
                         //find the vector between the player and the point its heading to
                         VectorA = new Vector2(TempVector.X - pHost.Position.X, TempVector.Y - pHost.Position.Y);
+                        VectorA90 = new Vector2(Vector90Degree.X - pHost.Position.X, Vector90Degree.Y - pHost.Position.Y);
                         
                         //find the vector between the player and the enemy
                         VectorB = new Vector2(A.Position.X - pHost.Position.X, A.Position.Y - pHost.Position.Y);
                         
-                        //the dot product numerator 
-                        DotprodNum = VectorA.X * VectorB.X + VectorA.Y * VectorB.Y;
                        
-                        //the dot product denominator
-                        DotProdDenom = Math.Sqrt(VectorA.X * VectorA.X + VectorA.Y * VectorA.Y) * (Math.Sqrt(VectorB.X * VectorB.X + VectorB.Y * VectorB.Y));
-                        degrees = Math.Acos(DotprodNum / DotProdDenom);
                         
-                        
+                        //degree of the enemy to the head of the player.
+                        //if enemy is 90 degrees to the head of the player then the angle will be pi/2
+                        radian = DotProduct(VectorA, VectorB); 
+                           
+
+                        //this is the degree of the enemy to pi/2 degrees of the head. 
+                        //so if the enemy is pi/2 degrees to the original head of the player, the new angle will be 0.
+                        radian90 = DotProduct(VectorA90, VectorB);
+                            
                         
                         //the head of the player
-                        if(degrees<Math.PI / 4)
+                        if(radian<Math.PI / 4)
                         {
                             EnemyQuad1.Add(A.Position);
                             if (EnemyQuad1.Count == 1)
@@ -117,7 +128,7 @@ namespace The_Dungeon.BLL
                         }
                         
                         //the tail of the player 
-                        else if(degrees>(3*Math.PI/4))
+                        else if(radian>(3*Math.PI/4))
                         {
                             EnemyQuad2.Add(A.Position);
                             if (EnemyQuad2.Count == 1)
@@ -133,8 +144,8 @@ namespace The_Dungeon.BLL
                                 Quad2Color = Color.Red;
                             }
                         }
-              //*****Still havent really figured out this part yet, still trying
-                        else if(degrees > Math.PI/4&&(Vector2.Distance(A.Position,LastEnemyLocation)<Vector2.Distance(A.Position,pHost.Position)))
+              
+                        else if(radian90<Math.PI/4)
                         {
                             LastEnemyLocation = A.Position;
                             EnemyQuad3.Add(A.Position);
@@ -152,7 +163,7 @@ namespace The_Dungeon.BLL
                                 Quad3Color = Color.Red;
                             }
                         }
-                  /////////*******   
+                   
                         else
                         {
                             EnemyQuad4.Add(A.Position);
@@ -174,7 +185,18 @@ namespace The_Dungeon.BLL
                 }
             }
         }
-        
+        public double DotProduct(Vector2 A, Vector2 B)
+        {
+            double radians, DotProdNum, DotProdDenom;
+            //the dot product numerator 
+            DotProdNum = A.X * B.X + A.Y * B.Y;
+            //the dot product denominator
+            DotProdDenom = Math.Sqrt(A.X * A.X + A.Y * A.Y) * (Math.Sqrt(B.X * B.X + B.Y * B.Y));
+
+            radians = Math.Acos(DotProdNum / DotProdDenom);
+            return radians;
+        }
+
         public override void Draw(ref SpriteBatch SB)
         {
             int j;
