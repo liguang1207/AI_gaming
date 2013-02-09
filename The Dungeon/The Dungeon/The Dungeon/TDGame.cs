@@ -64,17 +64,19 @@ namespace The_Dungeon
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            //Debug Font
+            DebugFont = Content.Load<SpriteFont>("Debug Font");
+
             // TODO: use this.Content to load your game content here
             //Player
             Texture2D PlayerTexture = Content.Load<Texture2D>("Player");
             pPlayer = new Pawn(PlayerTexture, new Rectangle(0, 0, PlayerTexture.Width, PlayerTexture.Height), Color.SlateGray);
             pPlayer.Position = new Vector2(graphics.GraphicsDevice.Viewport.Width / 2, graphics.GraphicsDevice.Viewport.Height / 2);
             //pPlayer.ToggleDebug(bDebug);
-            pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer);
+            pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer, DebugFont);
             WorldActors.Add(pPlayer);
             
-            //Debug Font
-            DebugFont = Content.Load<SpriteFont>("Debug Font");
+            
 
             if (bDebug)
             {
@@ -221,11 +223,11 @@ namespace The_Dungeon
         {
             if (pPlayer.Sensor == null)
             {
-                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer);
+                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer, DebugFont);
             }
             else if (pPlayer.Sensor is WallSensor)
             {
-                pPlayer.Sensor = new AgentSensor(ref WorldActors, pPlayer);
+                pPlayer.Sensor = new AgentSensor(ref WorldActors, pPlayer, DebugFont);
             }
             else if (pPlayer.Sensor is AgentSensor)
             {
@@ -233,7 +235,7 @@ namespace The_Dungeon
             }
             else
             {
-                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer );
+                pPlayer.Sensor = new WallSensor(ref WorldActors, pPlayer, DebugFont);
             }
         }
     }

@@ -24,7 +24,7 @@ namespace The_Dungeon.BLL
         private Color Quad4Color;
         private Vector2 LastEnemyLocation;
        
-        SpriteFont DebugFont;
+        
 
 
 
@@ -40,11 +40,10 @@ namespace The_Dungeon.BLL
         Vector2 VectorB = new Vector2();
 
         Vector2 VectorA90 = new Vector2();
-        
+
         public PieSensor(ref List<Actor> aWorldActors, Actor aHost, SpriteFont aDebugFont)
-            : base(ref aWorldActors, aHost)
+            : base(ref aWorldActors, aHost, aDebugFont)
         {
-            DebugFont = aDebugFont;
             
         }
 
@@ -184,6 +183,8 @@ namespace The_Dungeon.BLL
                     }
                 }
             }
+
+            DebugInformation = "[Q1 - " + EnemyQuad1.Count.ToString() + ", Q2 - " + EnemyQuad2.Count.ToString() + ", Q3 - " + EnemyQuad3.Count().ToString() + ", Q4 - " + EnemyQuad4.Count.ToString() + "]";
         }
         public double DotProduct(Vector2 A, Vector2 B)
         {
@@ -231,7 +232,7 @@ namespace The_Dungeon.BLL
             }
             //SB.DrawString(DebugFont, (pHost.Rotation).ToString() +" "+ (((3*Math.PI / 4) - pHost.Rotation)% (2 * Math.PI)).ToString() + " "+ EnemyPos.ToString(), new Vector2(100f, 300f), Color.Red);
             //SB.DrawString(DebugFont, LastEnemyLocation.ToString(), new Vector2(100f, 350f), Color.Red);
-            
+
             DrawingHelper.End();
         }
     }

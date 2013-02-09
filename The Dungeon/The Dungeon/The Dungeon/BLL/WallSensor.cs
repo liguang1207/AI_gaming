@@ -19,8 +19,8 @@ namespace The_Dungeon.BLL
 
 
        
-        public WallSensor(ref List<Actor> aWorldActors, Actor aHost)
-            : base(ref aWorldActors, aHost)
+        public WallSensor(ref List<Actor> aWorldActors, Actor aHost, SpriteFont aDebugFont)
+            : base(ref aWorldActors, aHost, aDebugFont)
         {
 
         }
@@ -50,25 +50,26 @@ namespace The_Dungeon.BLL
                     {
                         if (A is BlockingActor) //If its a wall
                         {
-                                //Get Distance
-                                float Distance = Vector2.Distance(A.Position, pHost.Position);
-                                if (Distance <= MAX_RANGE + pHost.RotationalVelocity) //In Range
+                            //Get Distance
+                            float Distance = Vector2.Distance(A.Position, pHost.Position);
+                            if (Distance <= MAX_RANGE + 64 + pHost.RotationalVelocity) //In Range
+                            {
+                                Vector2 HitAt = R.Intersects(A.CollisionRectangle); //Check if it intersects
+                                if (HitAt != Vector2.Zero)
                                 {
-                                    Vector2 HitAt = R.Intersects(A.CollisionRectangle); //Check if it intersects
-                                    if (HitAt != Vector2.Zero)
-                                    {
-                                        EndPoints.Add(HitAt);
-                                        HitWall = true;
-                                    }
+                                    EndPoints.Add(HitAt);
+                                    HitWall = true;
+
+                                    DebugInformation += "Feeler(" + (i + 1).ToString() + ") - Touching Wall " + Vector2.Distance(HitAt, pHost.Position).ToString() + "\r\n";
                                 }
                             }
-
-
                         }
+                    }
 
                         if (!HitWall)
                         {
                             EndPoints.Add(NextPosition);
+                            DebugInformation += "Feeler(" + (i + 1).ToString() + ") - Not Touching Wall\r\n";
                         }
                     }
                 
