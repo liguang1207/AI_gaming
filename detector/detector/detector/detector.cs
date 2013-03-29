@@ -147,7 +147,7 @@ namespace detector
             
             if (keyboard.IsKeyDown(Keys.Left))
             {
-                rotation = (float)(2 * Math.PI + (rotation - .1)) % (float)(2 * Math.PI);
+                rotation = (float)( (rotation - .1)) % (float)(2 * Math.PI);
                 //rotation = (float)(rotation - .1)%(float)(2*Math.PI);
             }
             if (keyboard.IsKeyDown(Keys.Right))
@@ -184,8 +184,8 @@ namespace detector
         {
 
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            basicEffect.CurrentTechnique.Passes[0].Apply();
-            graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.LineList, vertices, 0, 3);
+            //basicEffect.CurrentTechnique.Passes[0].Apply();
+            //graphics.GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.LineList, vertices, 0, 3);
             spriteBatch.Begin();
             spriteBatch.Draw(sprite, spritePosition,null, Color.White,rotation,spriteCenter,1f,SpriteEffects.None,0);
             spriteBatch.Draw(sprite2, spritePosition2, null, Color.White, rotation, spriteCenter, 1f, SpriteEffects.None, 0);
@@ -193,9 +193,9 @@ namespace detector
             
             //spriteBatch.DrawString(text,objRec.Bottom.ToString(),new Vector2(100f,100f),Color.Red);
             
-            spriteBatch.DrawString(text, bound.X.ToString(), new Vector2(100f, 150f), Color.Red);
-            spriteBatch.DrawString(text, (rotation%(2*Math.PI)).ToString(), new Vector2(100f, 200f), Color.Red);
-            spriteBatch.DrawString(text, "angle degree "+(rotation*180/Math.PI%360).ToString(), new Vector2(100f, 250f), Color.Red);
+            //spriteBatch.DrawString(text, bound.X.ToString(), new Vector2(100f, 150f), Color.Red);
+            spriteBatch.DrawString(text, (Math.Cos(rotation%(2*Math.PI))).ToString(), new Vector2(100f, 200f), Color.Red);
+            //spriteBatch.DrawString(text, "angle degree "+(rotation*180/Math.PI%360).ToString(), new Vector2(100f, 250f), Color.Red);
             spriteBatch.End();
             // TODO: Add your drawing code here
 

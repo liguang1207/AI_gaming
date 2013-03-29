@@ -72,7 +72,7 @@ namespace The_Dungeon.BLL
                        
                         if (radian90 < Math.PI/2)
                         {
-                            degrees  = 360 - radian;
+                            degrees  = 360 - degrees;
                         }
 
                         DebugInformation += "Enemy(" + (EndPoints.Count).ToString() + ") - " + Distance + " , Heading: " + degrees +"\r\n";
