@@ -25,9 +25,11 @@ namespace WindowsGame1
         Texture2D target;
         Texture2D enemy1;
         Texture2D pathTile;
+        Texture2D turret1Image;
         player actor;
         player badActor;
         List<player> enemy = new List<player>();
+        List<turrets> turretList = new List<turrets>();
         List<Tiles> openList = new List<Tiles>();
         List<Tiles> closedList = new List<Tiles>();
         List<Tiles> shortestPath = new List<Tiles>();
@@ -49,6 +51,7 @@ namespace WindowsGame1
         bool runPath = false;
         bool targetFound = false;
         bool debug = false;
+        bool turret1Control = false;
         SpriteFont text;
         int startX, startY;
         int tempX;
@@ -95,6 +98,7 @@ namespace WindowsGame1
             enemy1 = Content.Load<Texture2D>("enemy");
             pathTile = Content.Load<Texture2D>("pathTile");
             normTiles = Content.Load<Texture2D>("normTiles");
+            turret1Image = Content.Load<Texture2D>("turret1");
             gridBoundX = GraphicsDevice.Viewport.Height;
             gridBoundY = GraphicsDevice.Viewport.Width; 
             grid = new Tiles[(GraphicsDevice.Viewport.Height)][];
@@ -199,7 +203,7 @@ namespace WindowsGame1
                    tempb = grid[curX + 1][curY].total;
                }
                //bot right
-               if ( curX + 1 > 0 && curX + 1 < gridBoundX && curY + 1 > 0 && curY + 1<gridBoundY&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed)
+              /* if ( curX + 1 > 0 && curX + 1 < gridBoundX && curY + 1 > 0 && curY + 1<gridBoundY&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed)
                {
                    grid[curX + 1][curY+1].parentTile = grid[curX][curY];
                    grid[curX + 1][curY + 1].cost = 14;
@@ -220,6 +224,7 @@ namespace WindowsGame1
                    tempbr = grid[curX + 1][curY + 1].total;
                    
                }
+               
                //bot left
                if (curX+1>0 && curX+1< gridBoundX && curY-1>0 && curY<gridBoundY&&!grid[curX + 1][curY - 1].blocked && !grid[curX + 1][curY - 1].closed)
                {
@@ -242,6 +247,7 @@ namespace WindowsGame1
                    
                    tempbl = grid[curX + 1][curY - 1].total;
                }
+               */
                //top
                if (curX - 1 > 0 && curX - 1 < gridBoundX && curY > 0 && curY<gridBoundY&&!grid[curX - 1][curY].blocked && !grid[curX - 1][curY].closed)
                {
@@ -263,6 +269,7 @@ namespace WindowsGame1
                    }
                    tempt = grid[curX - 1][curY].total;
                }
+               /*
                //top left
                if ( curX - 1 > 0 && curX - 1 < gridBoundX && curY - 1 > 0 && curY - 1<gridBoundY&&!grid[curX - 1][curY - 1].blocked && !grid[curX - 1][curY - 1].closed )
                {
@@ -306,6 +313,7 @@ namespace WindowsGame1
                    }
                    temptr = grid[curX - 1][curY + 1].total;
                }
+                */
                //left
                if (curX > 0 && curX < gridBoundX && curY - 1 > 0 && curY - 1<gridBoundY&&!grid[curX][curY - 1].blocked && !grid[curX][curY - 1].closed )
                {
@@ -422,6 +430,28 @@ namespace WindowsGame1
                     targetX = mouse.Y / 50;
                     targetY = mouse.X / 50;
                 }
+                else if (turret1Control&&grid[mouse.Y/50][mouse.X/50].blocked)
+                {
+                    bool checkTurret = false;
+                    int i;
+                    for (i = 0; i < turretList.Count; i++)
+                    {
+                        if (turretList[i].turretRec.Contains(mouse.X, mouse.Y))
+                        {
+                            checkTurret = true;
+                            break;
+                        }
+                    }
+                    if (!checkTurret)
+                    {
+                        turrets newTurret = new turrets(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(turret1Image.Width / 2, turret1Image.Height / 2), new Rectangle((int)grid[mouse.Y / 50][mouse.X / 50].center.X - 25, (int)grid[mouse.Y / 50][mouse.X / 50].center.Y-25, 50, 50), turret1Image);
+                        turretList.Add(newTurret);
+                    }
+                    else
+                    {
+                        turretList.RemoveAt(turretList.IndexOf(turretList[i]));
+                    }
+                }
               
 
             }
@@ -493,6 +523,13 @@ namespace WindowsGame1
                     spriteBatch.Draw(A.playerSprite, A.spritePosition, null, Color.White, A.Rotation, A.spriteCenter, 1f, SpriteEffects.None, 0);
                 }
             }
+            if (turretList.Count != 0)
+            {
+                foreach (turrets T in turretList)
+                {
+                    spriteBatch.Draw(T.playerSprite, T.spritePosition, null, Color.White, T.Rotation, T.spriteCenter, 1f, SpriteEffects.None, 0);
+                }
+            }
             
 
             //draw the tiles marked as the shortest path to target
@@ -558,12 +595,14 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
-                    wallOn = true;
-                    pathfinding = false;
                     seek = false;
+                    pathfinding = false;
+                    wallOn = true;
                     playerOn = false;
                     targetOn = false;
+                    enemyOn = false;
                 }
             }
 
@@ -576,9 +615,10 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
-                    pathfinding = false;
                     seek = false;
+                    pathfinding = false;
                     wallOn = false;
                     playerOn = true;
                     targetOn = false;
@@ -595,9 +635,10 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = true;
-                    pathfinding = false;
                     seek = false;
+                    pathfinding = false;
                     wallOn = false;
                     playerOn = false;
                     targetOn = false;
@@ -615,9 +656,10 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
-                    pathfinding = false;
                     seek = false;
+                    pathfinding = false;
                     wallOn = false;
                     playerOn = false;
                     targetOn = false;
@@ -634,9 +676,10 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
-                    pathfinding = false;
                     seek = false;
+                    pathfinding = false;
                     wallOn = false;
                     playerOn = false;
                     targetOn = true;
@@ -654,9 +697,10 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
-                    pathfinding = true;
                     seek = false;
+                    pathfinding = true;
                     wallOn = false;
                     playerOn = false;
                     targetOn = false;
@@ -675,8 +719,29 @@ namespace WindowsGame1
                 }
                 else
                 {
+                    turret1Control = false;
                     runPath = false;
                     seek = true;
+                    pathfinding = false;
+                    wallOn = false;
+                    playerOn = false;
+                    targetOn = false;
+                    enemyOn = false;
+                }
+            }
+            if (keyboard.IsKeyDown(Keys.D1) && !prevkeyboard.IsKeyDown(Keys.D1))
+            {
+                if (turret1Control)
+                {
+                    turret1Control = false;
+
+
+                }
+                else
+                {
+                    turret1Control = true;
+                    runPath = false;
+                    seek = false;
                     pathfinding = false;
                     wallOn = false;
                     playerOn = false;
@@ -772,6 +837,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX + 1][curY])] = grid[curX + 1][curY]; 
                     }
                 }
+                /*
                 //bot right
                 if (curX + 1 > 0 && curX + 1 < gridBoundX && curY + 1 < gridBoundY && curY + 1>0&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed && !grid[curX + 1][curY + 1].open)
                 {
@@ -831,6 +897,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX + 1][curY - 1])] = grid[curX + 1][curY - 1];
                     }
                 }
+                 */
                 //top
                 if ( curX - 1>0 && curX-1<gridBoundX && curY>0 && curY<gridBoundY&&!grid[curX - 1][curY].blocked && !grid[curX - 1][curY].closed && !grid[curX - 1][curY].open )
                 {
@@ -860,6 +927,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX - 1][curY])] = grid[curX - 1][curY];
                     }
                 }
+                /*
                 //top left
                 if ( curX - 1 < gridBoundX && curX - 1 > 0 && curY - 1 > 0 && curY - 1<gridBoundY&&!grid[curX - 1][curY - 1].blocked && !grid[curX - 1][curY - 1].closed && !grid[curX - 1][curY - 1].open )
                 {
@@ -919,6 +987,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX - 1][curY + 1])] = grid[curX - 1][curY + 1];
                     }
                 }
+                 */
                 //left
                 if ( curX > 0 && curX < gridBoundX && curY - 1 > 0 && curY - 1<gridBoundY&&!grid[curX][curY - 1].blocked && !grid[curX][curY - 1].closed && !grid[curX][curY - 1].open )
                 {
