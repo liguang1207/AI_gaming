@@ -35,6 +35,9 @@ namespace WindowsGame1
         public MouseState mouse;
         public MouseState preState;
         public Vector2 click = new Vector2(-1, -1);
+
+        private const float MAX_RANGE = 150;
+
         public turrets(Vector2 Pos, Vector2 Center, Rectangle rec, Texture2D sprite)
         {
             spritePosition = Pos;
@@ -43,7 +46,7 @@ namespace WindowsGame1
             playerSprite = sprite;
         }
 
-       
+
 
 
         //calculating the distance between two vectors 
@@ -60,6 +63,63 @@ namespace WindowsGame1
 
             return Math.Abs(distance);
 
+        }
+
+        //set the turret head location to the location of the enemy
+        public void ScanEnemies(List<player> enemy)
+        {
+            foreach (player P in enemy)
+            {
+                distance = Vector2.Distance(spritePosition, P.spritePosition);
+
+                if (distance <= MAX_RANGE)
+                {
+                    //find a random point that the heading is point to
+                    TempVector = new Vector2((float)Math.Cos(Rotation) * 50 + spritePosition.X, (float)Math.Sin(Rotation) * 50 + spritePosition.Y);
+
+                    //Made a point that is 90 degrees of the heading - this is used for testing the angles for the two sides 
+                    Vector90Degree = new Vector2((float)Math.Cos(Rotation + (Math.PI / 2)) * 100 + spritePosition.X, (float)Math.Sin(Rotation + (Math.PI / 2)) * 100 + spritePosition.Y);
+
+                    //find the vector between the player and the point its heading to
+                    VectorA = new Vector2(TempVector.X - spritePosition.X, TempVector.Y - spritePosition.Y);
+                    VectorA90 = new Vector2(Vector90Degree.X - spritePosition.X, Vector90Degree.Y - spritePosition.Y);
+
+                    //find the vector between the player and the enemy
+                    VectorB = new Vector2(P.spritePosition.X - spritePosition.X, P.spritePosition.Y - spritePosition.Y);
+
+
+
+                    //degree of the enemy to the head of the player.
+                    //if enemy is 90 degrees to the head of the player then the angle will be pi/2
+                    radian = DotProduct(VectorA, VectorB);
+
+
+                    //this is the degree of the enemy to pi/2 degrees of the head. 
+                    //so if the enemy is pi/2 degrees to the original head of the player, the new angle will be 0.
+                    radian90 = DotProduct(VectorA90, VectorB);
+
+                    if (radian90 < Math.PI / 2)
+                    {
+                        radian = 2 * Math.PI - radian;
+                        
+                    }
+                    Rotation += -(float)radian;
+
+                    break;
+                }
+            }
+        }
+        public double DotProduct(Vector2 A, Vector2 B)
+        {
+            double radians, DotProdNum, DotProdDenom;
+            //the dot product numerator 
+            DotProdNum = A.X * B.X + A.Y * B.Y;
+            //the dot product denominator
+            DotProdDenom = Math.Sqrt(A.X * A.X + A.Y * A.Y) * (Math.Sqrt(B.X * B.X + B.Y * B.Y));
+
+
+            radians = Math.Acos(Math.Round(DotProdNum / DotProdDenom, 6));
+            return radians;
         }
 
     }

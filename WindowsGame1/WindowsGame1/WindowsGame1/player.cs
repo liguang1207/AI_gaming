@@ -25,7 +25,7 @@ namespace WindowsGame1
         public float distance;
         public Vector2 TempVector;
         public Vector2 Vector90Degree;
-
+        public int curSeek = 0;
         public Vector2 VectorA;
         public Vector2 VectorB;
         public Vector2 VectorA90;
