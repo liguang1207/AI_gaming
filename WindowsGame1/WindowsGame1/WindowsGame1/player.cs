@@ -31,10 +31,13 @@ namespace WindowsGame1
         public Vector2 VectorA90;
         public double radian, radian90;
         public Vector2 seekCoord = new Vector2(-1, -1);
-        
+        public List<Tiles> FollowPath = new List<Tiles>();
+        public bool pathFound = false; 
+
+
         public MouseState mouse;
         public MouseState preState;
-        public Vector2 click = new Vector2(-1,-1);
+        public Vector2 click = new Vector2(-1, -1);
         public player(Vector2 Pos, Vector2 Center, Rectangle rec, Texture2D sprite)
         {
             spritePosition = Pos;
@@ -46,61 +49,63 @@ namespace WindowsGame1
         //function to let the player seek to the list of points found in the shortest path in A*
         public bool seekPath(Vector2 coord)
         {
-            
-            
+
+
             spriteVelocity = Vector2.Zero;
 
-            
+
             distance = calculateDistance(seekCoord, spritePosition);
 
 
             seekCoord = new Vector2(coord.X, coord.Y);
 
 
-                //find a random point that the heading is point to
-                TempVector = new Vector2((float)Math.Cos(Rotation) * 50 + spritePosition.X, (float)Math.Sin(Rotation) * 50 + spritePosition.Y);
+            //find a random point that the heading is point to
+            TempVector = new Vector2((float)Math.Cos(Rotation) * 50 + spritePosition.X, (float)Math.Sin(Rotation) * 50 + spritePosition.Y);
 
-                //Made a point that is 90 degrees of the heading - this is used for testing the angles for the two sides 
-                Vector90Degree = new Vector2((float)Math.Cos(Rotation + (Math.PI / 2)) * 100 + spritePosition.X, (float)Math.Sin(Rotation + (Math.PI / 2)) * 100 + spritePosition.Y);
+            //Made a point that is 90 degrees of the heading - this is used for testing the angles for the two sides 
+            Vector90Degree = new Vector2((float)Math.Cos(Rotation + (Math.PI / 2)) * 100 + spritePosition.X, (float)Math.Sin(Rotation + (Math.PI / 2)) * 100 + spritePosition.Y);
 
-                //find the vector between the player and the point its heading to
-                VectorA = new Vector2(TempVector.X - spritePosition.X, TempVector.Y - spritePosition.Y);
-                VectorA90 = new Vector2(Vector90Degree.X - spritePosition.X, Vector90Degree.Y - spritePosition.Y);
+            //find the vector between the player and the point its heading to
+            VectorA = new Vector2(TempVector.X - spritePosition.X, TempVector.Y - spritePosition.Y);
+            VectorA90 = new Vector2(Vector90Degree.X - spritePosition.X, Vector90Degree.Y - spritePosition.Y);
 
-                //find the vector between the player and the enemy
-                VectorB = new Vector2(seekCoord.X - spritePosition.X, seekCoord.Y - spritePosition.Y);
-
-
-
-                //degree of the enemy to the head of the player.
-                //if enemy is 90 degrees to the head of the player then the angle will be pi/2
-                radian = DotProduct(VectorA, VectorB);
+            //find the vector between the player and the enemy
+            VectorB = new Vector2(seekCoord.X - spritePosition.X, seekCoord.Y - spritePosition.Y);
 
 
-                //this is the degree of the enemy to pi/2 degrees of the head. 
-                //so if the enemy is pi/2 degrees to the original head of the player, the new angle will be 0.
-                radian90 = DotProduct(VectorA90, VectorB);
 
-                if (radian90 < Math.PI / 2)
-                {
-                    radian = 2 * Math.PI - radian;
-                }
-                Rotation += -(float)radian;
+            //degree of the enemy to the head of the player.
+            //if enemy is 90 degrees to the head of the player then the angle will be pi/2
+            radian = DotProduct(VectorA, VectorB);
 
-                spriteVelocity.X = (float)Math.Cos(Rotation) * rotationVelocity;
-                spriteVelocity.Y = (float)Math.Sin(Rotation) * rotationVelocity;
 
-                
-                
+            //this is the degree of the enemy to pi/2 degrees of the head. 
+            //so if the enemy is pi/2 degrees to the original head of the player, the new angle will be 0.
+            radian90 = DotProduct(VectorA90, VectorB);
+
+            if (radian90 < Math.PI / 2)
+            {
+                radian = 2 * Math.PI - radian;
+            }
+            Rotation += -(float)radian;
+
+            spriteVelocity.X = (float)Math.Cos(Rotation) * rotationVelocity;
+            spriteVelocity.Y = (float)Math.Sin(Rotation) * rotationVelocity;
+
+
+
             spritePosition += spriteVelocity;
-            if ((spritePosition.X > seekCoord.X - 5 && spritePosition.X < seekCoord.X + 5) && (spritePosition.Y > seekCoord.Y -5 && spritePosition.Y < seekCoord.Y + 5))
+            playerRec.X = (int)spritePosition.X-25;
+            playerRec.Y = (int)spritePosition.Y-25;
+            if ((spritePosition.X > seekCoord.X - 5 && spritePosition.X < seekCoord.X + 5) && (spritePosition.Y > seekCoord.Y - 5 && spritePosition.Y < seekCoord.Y + 5))
             {
                 //return true if the player is at its destination
                 return true;
             }
             return false;
-            
-            
+
+
         }
 
         //let the agents seek to the mouse clicked position
@@ -109,7 +114,7 @@ namespace WindowsGame1
             mouse = Mouse.GetState();
             Vector2 direction;
             spriteVelocity = Vector2.Zero;
-            
+
             direction = click - spritePosition;
             distance = calculateDistance(click, spritePosition);
 
@@ -122,13 +127,13 @@ namespace WindowsGame1
             {
 
                 click = new Vector2(mouse.X, mouse.Y);
-                
+
 
                 //find a random point that the heading is point to
                 TempVector = new Vector2((float)Math.Cos(Rotation) * 50 + spritePosition.X, (float)Math.Sin(Rotation) * 50 + spritePosition.Y);
 
                 //Made a point that is 90 degrees of the heading - this is used for testing the angles for the two sides 
-                Vector90Degree = new Vector2((float)Math.Cos(Rotation + (Math.PI / 2)) * 100 +spritePosition.X, (float)Math.Sin(Rotation + (Math.PI / 2)) * 100 + spritePosition.Y);
+                Vector90Degree = new Vector2((float)Math.Cos(Rotation + (Math.PI / 2)) * 100 + spritePosition.X, (float)Math.Sin(Rotation + (Math.PI / 2)) * 100 + spritePosition.Y);
 
                 //find the vector between the player and the point its heading to
                 VectorA = new Vector2(TempVector.X - spritePosition.X, TempVector.Y - spritePosition.Y);
@@ -150,11 +155,11 @@ namespace WindowsGame1
 
                 if (radian90 < Math.PI / 2)
                 {
-                   radian = 2*Math.PI - radian;
+                    radian = 2 * Math.PI - radian;
                 }
                 Rotation += -(float)radian;
 
-                                            
+
             }
 
             //when the agents are at the click location reset the click so they dont move there again later when seek is turned on.
@@ -168,7 +173,7 @@ namespace WindowsGame1
                 {
                     spriteVelocity += direction * spriteSpeed;
                 }
-                
+
             }
             spritePosition += spriteVelocity;
             if ((spritePosition.X > click.X - 5 && spritePosition.X < click.X + 5) && (spritePosition.Y > click.Y - 5 && spritePosition.Y < click.Y + 5))
@@ -186,8 +191,8 @@ namespace WindowsGame1
             //the dot product denominator
             DotProdDenom = Math.Sqrt(A.X * A.X + A.Y * A.Y) * (Math.Sqrt(B.X * B.X + B.Y * B.Y));
 
-            
-            radians = Math.Acos(Math.Round(DotProdNum / DotProdDenom,6));
+
+            radians = Math.Acos(Math.Round(DotProdNum / DotProdDenom, 6));
             return radians;
         }
 
@@ -211,11 +216,11 @@ namespace WindowsGame1
         public void updateMovement()
         {
             KeyboardState keyboard = Keyboard.GetState();
-            
+
             spritePosition += spriteVelocity;
 
             //move forward
-            if (keyboard.IsKeyDown(Keys.Up) )
+            if (keyboard.IsKeyDown(Keys.Up))
             {
                 spriteVelocity.X = (float)Math.Cos(Rotation) * rotationVelocity;
                 spriteVelocity.Y = (float)Math.Sin(Rotation) * rotationVelocity;

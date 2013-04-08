@@ -107,6 +107,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="bullet.cs" />
     <Compile Include="player.cs" />
     <Compile Include="Tiles.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

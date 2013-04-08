@@ -26,6 +26,7 @@ namespace WindowsGame1
         Texture2D enemy1;
         Texture2D pathTile;
         Texture2D turret1Image;
+        Texture2D bullet1Image;
         player actor;
         player badActor;
         List<player> enemy = new List<player>();
@@ -106,6 +107,7 @@ namespace WindowsGame1
             pathTile = Content.Load<Texture2D>("pathTile");
             normTiles = Content.Load<Texture2D>("normTiles");
             turret1Image = Content.Load<Texture2D>("turret1");
+            bullet1Image = Content.Load<Texture2D>("bullet1");
             gridBoundX = GraphicsDevice.Viewport.Height;
             gridBoundY = GraphicsDevice.Viewport.Width;
             grid = new Tiles[(GraphicsDevice.Viewport.Height)][];
@@ -164,29 +166,88 @@ namespace WindowsGame1
             {
                 if (enemy.Count != 0)
                 {
-                    T.ScanEnemies(enemy);
+                    T.ScanEnemies(enemy, gameTime);
+
+                }
+                for (int i = 0; i < T.bulletList.Count; i++)
+                {
+                    T.bulletList[i].updateBullet();
+                    for (int j = 0; j < enemy.Count; j++)
+                    {
+                        if (T.bulletList[i].bulletHitBox.Intersects(enemy[j].playerRec))
+                        {
+                            T.bulletList.RemoveAt(i);
+                            enemy.RemoveAt(j);
+                            i--;
+                            break;
+                        }
+
+                    }
+
 
                 }
             }
 
+            foreach (turrets R in turretList)
+            {
+                for (int i = 0; i < R.bulletList.Count; i++)
+                {
+                    if (Vector2.Distance(R.bulletList[i].position, R.spritePosition) > R.MAX_RANGE)
+                    {
+                        R.bulletList.RemoveAt(i);
+                        i--;
+                        break;
+                    }
+                }
+            }
 
 
             //run the path found by A*
             foreach (player A in enemy)
             {
+                if (!A.pathFound)
+                {
+                    found = false;
+                    targetFound = false;
+                    openList.Clear();
+                    closedList.Clear();
+                    shortestPath.Clear();
+                    for (int i = 0; i < (GraphicsDevice.Viewport.Height); i++)
+                    {
 
-                if (found && shortestPath.Count > 0 && A.curSeek < shortestPath.Count && A.seekPath(shortestPath[A.curSeek].center))
+                        for (int j = 0; j < (GraphicsDevice.Viewport.Width); j++)
+                        {
+                            grid[i][j].open = false;
+                            grid[i][j].closed = false;
+                        }
+                    }
+
+
+
+                    initialFindPath();
+                    A.pathFound = found;
+                    A.FollowPath.AddRange(shortestPath);
+
+
+                }
+                if (A.pathFound && A.FollowPath.Count > 0 && A.curSeek < A.FollowPath.Count && A.seekPath(A.FollowPath[A.curSeek].center))
                 {
 
                     A.curSeek++;
-                    //shortestPath.RemoveAt(0);
+
 
                 }
-                /*if (A.curSeek == shortestPath.Count && found)
-                {
-                    enemy.RemoveAt(enemy.IndexOf(A));
-                }*/
 
+
+
+            }
+            for (int k = 0; k < enemy.Count; k++)
+            {
+                if (enemy[k].curSeek == enemy[k].FollowPath.Count && enemy[k].pathFound)
+                {
+                    enemy.RemoveAt(k);
+                    k--;
+                }
             }
 
             //every agent on the board will seek to the mouse click
@@ -211,7 +272,202 @@ namespace WindowsGame1
             }
 
             //if A* is turned on, and player and target exist, find the shortest path to target
-            if (pathfinding && enemyExist && targetExist && !targetFound)
+
+
+
+            mouse = Mouse.GetState();
+            if (mouse.LeftButton == ButtonState.Pressed && preState.LeftButton == ButtonState.Released)
+            {
+                //create/delete wall at click
+                if (wallOn)
+                {
+                    grid[mouse.Y / 50][mouse.X / 50].ifBlocked(true, wall, debugTiles);
+                }
+
+                //create/move player to click
+                else if (playerOn)
+                {
+                    playerExist = true;
+                    actor = new player(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle(mouse.X, mouse.Y, 50, 50), player1);
+
+                }
+
+                //create enemy at click
+                else if (enemyOn)
+                {
+                    enemyExist = true;
+                    badActor = new player(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle(mouse.X, mouse.Y, 50, 50), enemy1);
+                    enemy.Add(badActor);
+                }
+
+                //create/delete target at click
+                else if (targetOn)
+                {
+                    targetExist = true;
+                    grid[mouse.Y / 50][mouse.X / 50].ifTarget(true, target, debugTiles);
+                    targetX = mouse.Y / 50;
+                    targetY = mouse.X / 50;
+                }
+                else if (turret1Control && grid[mouse.Y / 50][mouse.X / 50].blocked)
+                {
+                    bool checkTurret = false;
+                    int i;
+                    for (i = 0; i < turretList.Count; i++)
+                    {
+                        if (turretList[i].turretRec.Contains(mouse.X, mouse.Y))
+                        {
+                            checkTurret = true;
+                            break;
+                        }
+                    }
+                    if (!checkTurret)
+                    {
+                        turrets newTurret = new turrets(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(turret1Image.Width / 2, turret1Image.Height / 2), new Rectangle((int)grid[mouse.Y / 50][mouse.X / 50].center.X - 25, (int)grid[mouse.Y / 50][mouse.X / 50].center.Y - 25, 50, 50), turret1Image, bullet1Image);
+                        turretList.Add(newTurret);
+                    }
+                    else
+                    {
+                        turretList.RemoveAt(turretList.IndexOf(turretList[i]));
+                    }
+                }
+
+
+            }
+
+            preState = Mouse.GetState();
+
+            //if no other functions are running then the user can move the player
+            if (playerExist && !seek && !pathfinding && !runPath)
+            {
+                actor.updateMovement();
+            }
+            base.Update(gameTime);
+        }
+
+        /// <summary>
+        /// This is called when the game should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+
+            //if debug is turned on the game board will turn to tiles
+            if (debug)
+            {
+                for (int i = 0; i < (GraphicsDevice.Viewport.Height / 10); i++)
+                {
+                    for (int j = 0; j < (GraphicsDevice.Viewport.Width / 10); j++)
+                    {
+                        if (!grid[i][j].blocked && !grid[i][j].target && !grid[i][j].path)
+                        {
+                            grid[i][j].tiles = debugTiles;
+                        }
+                        spriteBatch.Draw(grid[i][j].tiles, grid[i][j].rec, Color.White);
+                    }
+                }
+            }
+            else if (!debug)
+            {
+                for (int i = 0; i < (GraphicsDevice.Viewport.Height / 10); i++)
+                {
+                    for (int j = 0; j < (GraphicsDevice.Viewport.Width / 10); j++)
+                    {
+                        if (!grid[i][j].blocked && !grid[i][j].target && !grid[i][j].path)
+                        {
+                            grid[i][j].tiles = normTiles;
+                        }
+                        spriteBatch.Draw(grid[i][j].tiles, grid[i][j].rec, Color.White);
+                    }
+                }
+            }
+
+            //draw the player location and coord to the board
+            if (playerExist)
+            {
+                //spriteBatch.Draw(player1, new Rectangle(50, 50, 50, 50), Color.White);
+                spriteBatch.Draw(actor.playerSprite, actor.spritePosition, null, Color.White, actor.Rotation, actor.spriteCenter, 1f, SpriteEffects.None, 0);
+                //spriteBatch.DrawString(text, actor.spritePosition.ToString(), new Vector2(0, 0), Color.Red);
+
+            }
+
+            //draw the enemies to the board
+            if (enemyExist)
+            {
+                foreach (player A in enemy)
+                {
+                    spriteBatch.Draw(A.playerSprite, A.spritePosition, null, Color.White, A.Rotation, A.spriteCenter, 1f, SpriteEffects.None, 0);
+                }
+            }
+            if (turretList.Count != 0)
+            {
+                foreach (turrets T in turretList)
+                {
+                    spriteBatch.Draw(T.turretSprite, T.spritePosition, null, Color.White, T.Rotation, T.spriteCenter, 1f, SpriteEffects.None, 0);
+                    //spriteBatch.DrawString(text, T.bulletList.Count.ToString(), new Vector2(20, 20), Color.Red);
+                    foreach (bullet B in T.bulletList)
+                    {
+                        spriteBatch.Draw(B.bulletSprite, B.position, Color.White);
+                    }
+                }
+            }
+
+
+            //draw the tiles marked as the shortest path to target
+            if (pathfinding)
+            {
+
+
+                for (int e = 0; e < shortestPath.Count; e++)
+                {
+                    spriteBatch.DrawString(text, shortestPath[e].coordX.ToString() + " " + shortestPath[e].coordY.ToString() + " " + shortestPath[e].center.ToString(), new Vector2(0, (e + 10) * 20), Color.Red);
+                    grid[shortestPath[e].coordX][shortestPath[e].coordY].tiles = pathTile;
+                    grid[shortestPath[e].coordX][shortestPath[e].coordY].path = true;
+                }
+
+                //print information on all the node visited to text
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter("dataDump.txt"))
+                {
+                    for (int q = 0; q < closedList.Count; q++)
+                    {
+                        file.WriteLine("center coord of tile" + closedList[q].center.ToString() + "; Tile coord (" + closedList[q].coordX.ToString() + "," + closedList[q].coordY.ToString() + ")");
+                    }
+                    file.WriteLine("shortestPath choosen:");
+                    for (int z = 0; z < shortestPath.Count; z++)
+                    {
+                        file.WriteLine("center coord of the tile" + shortestPath[z].center.ToString() + "; Tile coord (" + shortestPath[z].coordX.ToString() + "," + shortestPath[z].coordY.ToString() + ")");
+                    }
+
+                }
+
+
+            }
+
+            //if debug is on print numbers to each tile
+            if (debug)
+            {
+                int num = 0;
+                for (int x = 0; x < 16; x++)
+                {
+                    for (int y = 0; y < 10; y++)
+                    {
+                        spriteBatch.DrawString(text, num.ToString(), new Vector2(x * 50, y * 50), Color.Red);
+                        num++;
+                    }
+                }
+            }
+            spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+
+
+        public void initialFindPath()
+        {
+            if (enemyExist && targetExist && !targetFound)
             {
 
                 int curX, curY;
@@ -444,191 +700,8 @@ namespace WindowsGame1
 
 
             }
-
-
-            mouse = Mouse.GetState();
-            if (mouse.LeftButton == ButtonState.Pressed && preState.LeftButton == ButtonState.Released)
-            {
-                //create/delete wall at click
-                if (wallOn)
-                {
-                    grid[mouse.Y / 50][mouse.X / 50].ifBlocked(true, wall, debugTiles);
-                }
-
-                //create/move player to click
-                else if (playerOn)
-                {
-                    playerExist = true;
-                    actor = new player(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle(mouse.X, mouse.Y, 50, 50), player1);
-
-                }
-
-                //create enemy at click
-                else if (enemyOn)
-                {
-                    enemyExist = true;
-                    badActor = new player(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle(mouse.X, mouse.Y, 50, 50), enemy1);
-                    enemy.Add(badActor);
-                }
-
-                //create/delete target at click
-                else if (targetOn)
-                {
-                    targetExist = true;
-                    grid[mouse.Y / 50][mouse.X / 50].ifTarget(true, target, debugTiles);
-                    targetX = mouse.Y / 50;
-                    targetY = mouse.X / 50;
-                }
-                else if (turret1Control && grid[mouse.Y / 50][mouse.X / 50].blocked)
-                {
-                    bool checkTurret = false;
-                    int i;
-                    for (i = 0; i < turretList.Count; i++)
-                    {
-                        if (turretList[i].turretRec.Contains(mouse.X, mouse.Y))
-                        {
-                            checkTurret = true;
-                            break;
-                        }
-                    }
-                    if (!checkTurret)
-                    {
-                        turrets newTurret = new turrets(grid[mouse.Y / 50][mouse.X / 50].center, new Vector2(turret1Image.Width / 2, turret1Image.Height / 2), new Rectangle((int)grid[mouse.Y / 50][mouse.X / 50].center.X - 25, (int)grid[mouse.Y / 50][mouse.X / 50].center.Y - 25, 50, 50), turret1Image);
-                        turretList.Add(newTurret);
-                    }
-                    else
-                    {
-                        turretList.RemoveAt(turretList.IndexOf(turretList[i]));
-                    }
-                }
-
-
-            }
-
-            preState = Mouse.GetState();
-
-            //if no other functions are running then the user can move the player
-            if (playerExist && !seek && !pathfinding && !runPath)
-            {
-                actor.updateMovement();
-            }
-            base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
-        protected override void Draw(GameTime gameTime)
-        {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
-            spriteBatch.Begin();
-
-            //if debug is turned on the game board will turn to tiles
-            if (debug)
-            {
-                for (int i = 0; i < (GraphicsDevice.Viewport.Height / 10); i++)
-                {
-                    for (int j = 0; j < (GraphicsDevice.Viewport.Width / 10); j++)
-                    {
-                        if (!grid[i][j].blocked && !grid[i][j].target && !grid[i][j].path)
-                        {
-                            grid[i][j].tiles = debugTiles;
-                        }
-                        spriteBatch.Draw(grid[i][j].tiles, grid[i][j].rec, Color.White);
-                    }
-                }
-            }
-            else if (!debug)
-            {
-                for (int i = 0; i < (GraphicsDevice.Viewport.Height / 10); i++)
-                {
-                    for (int j = 0; j < (GraphicsDevice.Viewport.Width / 10); j++)
-                    {
-                        if (!grid[i][j].blocked && !grid[i][j].target && !grid[i][j].path)
-                        {
-                            grid[i][j].tiles = normTiles;
-                        }
-                        spriteBatch.Draw(grid[i][j].tiles, grid[i][j].rec, Color.White);
-                    }
-                }
-            }
-
-            //draw the player location and coord to the board
-            if (playerExist)
-            {
-                //spriteBatch.Draw(player1, new Rectangle(50, 50, 50, 50), Color.White);
-                spriteBatch.Draw(actor.playerSprite, actor.spritePosition, null, Color.White, actor.Rotation, actor.spriteCenter, 1f, SpriteEffects.None, 0);
-                spriteBatch.DrawString(text, actor.spritePosition.ToString(), new Vector2(0, 0), Color.Red);
-
-            }
-
-            //draw the enemies to the board
-            if (enemyExist)
-            {
-                foreach (player A in enemy)
-                {
-                    spriteBatch.Draw(A.playerSprite, A.spritePosition, null, Color.White, A.Rotation, A.spriteCenter, 1f, SpriteEffects.None, 0);
-                }
-            }
-            if (turretList.Count != 0)
-            {
-                foreach (turrets T in turretList)
-                {
-                    spriteBatch.Draw(T.playerSprite, T.spritePosition, null, Color.White, T.Rotation, T.spriteCenter, 1f, SpriteEffects.None, 0);
-                }
-            }
-
-
-            //draw the tiles marked as the shortest path to target
-            if (pathfinding)
-            {
-
-
-                for (int e = 0; e < shortestPath.Count; e++)
-                {
-                    spriteBatch.DrawString(text, shortestPath[e].coordX.ToString() + " " + shortestPath[e].coordY.ToString() + " " + shortestPath[e].center.ToString(), new Vector2(0, (e + 10) * 20), Color.Red);
-                    grid[shortestPath[e].coordX][shortestPath[e].coordY].tiles = pathTile;
-                    grid[shortestPath[e].coordX][shortestPath[e].coordY].path = true;
-                }
-
-                //print information on all the node visited to text
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter("dataDump.txt"))
-                {
-                    for (int q = 0; q < closedList.Count; q++)
-                    {
-                        file.WriteLine("center coord of tile" + closedList[q].center.ToString() + "; Tile coord (" + closedList[q].coordX.ToString() + "," + closedList[q].coordY.ToString() + ")");
-                    }
-                    file.WriteLine("shortestPath choosen:");
-                    for (int z = 0; z < shortestPath.Count; z++)
-                    {
-                        file.WriteLine("center coord of the tile" + shortestPath[z].center.ToString() + "; Tile coord (" + shortestPath[z].coordX.ToString() + "," + shortestPath[z].coordY.ToString() + ")");
-                    }
-
-                }
-
-
-            }
-
-            //if debug is on print numbers to each tile
-            if (debug)
-            {
-                int num = 0;
-                for (int x = 0; x < 16; x++)
-                {
-                    for (int y = 0; y < 10; y++)
-                    {
-                        spriteBatch.DrawString(text, num.ToString(), new Vector2(x * 50, y * 50), Color.Red);
-                        num++;
-                    }
-                }
-            }
-            spriteBatch.End();
-
-            base.Draw(gameTime);
-        }
 
         //changes the mode of the game
         //when one mode is active, all other will be switched off

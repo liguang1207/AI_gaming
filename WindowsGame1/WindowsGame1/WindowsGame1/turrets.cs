@@ -16,7 +16,8 @@ namespace WindowsGame1
         public Vector2 spritePosition;
         public Vector2 spriteCenter;
         public Vector2 spriteVelocity;
-        public Texture2D playerSprite;
+        public Texture2D turretSprite;
+        public Texture2D bulletSprite;
         public float spriteSpeed = 5;
         public float seekSpeed = 2;
         const float rotationVelocity = 4f;
@@ -35,15 +36,23 @@ namespace WindowsGame1
         public MouseState mouse;
         public MouseState preState;
         public Vector2 click = new Vector2(-1, -1);
+        public DateTime now;
 
-        private const float MAX_RANGE = 150;
+        public List<bullet> bulletList = new List<bullet>();
 
-        public turrets(Vector2 Pos, Vector2 Center, Rectangle rec, Texture2D sprite)
+        float timer = .5f;
+        const float Timer = .5f;
+        public float MAX_RANGE = 150;
+
+        public turrets(Vector2 Pos, Vector2 Center, Rectangle rec, Texture2D sprite, Texture2D bulletImage)
         {
             spritePosition = Pos;
             spriteCenter = Center;
             turretRec = rec;
-            playerSprite = sprite;
+            turretSprite = sprite;
+            bulletSprite = bulletImage; 
+            
+            
         }
 
 
@@ -66,7 +75,7 @@ namespace WindowsGame1
         }
 
         //set the turret head location to the location of the enemy
-        public void ScanEnemies(List<player> enemy)
+        public void ScanEnemies(List<player> enemy, GameTime gameTime)
         {
             foreach (player P in enemy)
             {
@@ -105,8 +114,22 @@ namespace WindowsGame1
                     }
                     Rotation += -(float)radian;
 
+                    float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    timer -= elapsed;
+
+                    if (timer < 0)
+                    {
+                        bullet Bullet = new bullet(bulletSprite, Rotation, spritePosition);
+                        bulletList.Add(Bullet);
+                        timer = Timer; 
+                    }
+
+                    
+
+
                     break;
                 }
+                
             }
         }
         public double DotProduct(Vector2 A, Vector2 B)
