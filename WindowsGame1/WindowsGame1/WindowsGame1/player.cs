@@ -19,7 +19,7 @@ namespace WindowsGame1
         public Texture2D playerSprite;
         public float spriteSpeed = 5;
         public float seekSpeed = 2;
-        const float rotationVelocity = 4f;
+        public float rotationVelocity = 4f;
         public float Rotation = 0;
         public Rectangle playerRec;
         public float distance;
@@ -32,7 +32,8 @@ namespace WindowsGame1
         public double radian, radian90;
         public Vector2 seekCoord = new Vector2(-1, -1);
         public List<Tiles> FollowPath = new List<Tiles>();
-        public bool pathFound = false; 
+        public bool pathFound = false;
+        public int health = 100;
 
 
         public MouseState mouse;
@@ -47,7 +48,7 @@ namespace WindowsGame1
         }
 
         //function to let the player seek to the list of points found in the shortest path in A*
-        public bool seekPath(Vector2 coord)
+        public virtual bool seekPath(Vector2 coord)
         {
 
 

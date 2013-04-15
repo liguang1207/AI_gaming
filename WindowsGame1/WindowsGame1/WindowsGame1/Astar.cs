@@ -27,6 +27,7 @@ namespace WindowsGame1
         Texture2D pathTile;
         Texture2D turret1Image;
         Texture2D bullet1Image;
+        Texture2D healthBar;
         player actor;
         player badActor;
         List<player> enemy = new List<player>();
@@ -108,6 +109,7 @@ namespace WindowsGame1
             normTiles = Content.Load<Texture2D>("normTiles");
             turret1Image = Content.Load<Texture2D>("turret1");
             bullet1Image = Content.Load<Texture2D>("bullet1");
+            healthBar = Content.Load<Texture2D>("HealthBar");
             gridBoundX = GraphicsDevice.Viewport.Height;
             gridBoundY = GraphicsDevice.Viewport.Width;
             grid = new Tiles[(GraphicsDevice.Viewport.Height)][];
@@ -155,10 +157,12 @@ namespace WindowsGame1
             timer -= elapsed;
             if (timer < 0)
             {
+                enemyCharger Charger = new enemyCharger(grid[3][0].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle((int)grid[3][0].center.X - 25, (int)grid[3][0].center.Y - 25, 50, 50), enemy1);
                 //Timer expired, execute action
                 enemyExist = true;
                 badActor = new player(grid[3][0].center, new Vector2(player1.Width / 2, player1.Height / 2), new Rectangle((int)grid[3][0].center.X - 25, (int)grid[3][0].center.Y - 25, 50, 50), enemy1);
                 enemy.Add(badActor);
+                enemy.Add(Charger);
                 timer = TIMER;   //Reset Timer
             }
 
@@ -176,8 +180,13 @@ namespace WindowsGame1
                     {
                         if (T.bulletList[i].bulletHitBox.Intersects(enemy[j].playerRec))
                         {
+                            enemy[j].health -= 20;
                             T.bulletList.RemoveAt(i);
-                            enemy.RemoveAt(j);
+                            if (enemy[j].health < 0)
+                            {
+                                enemy.RemoveAt(j);
+                                
+                            }
                             i--;
                             break;
                         }
@@ -201,11 +210,35 @@ namespace WindowsGame1
                 }
             }
 
-
+            
             //run the path found by A*
             foreach (player A in enemy)
             {
-                if (!A.pathFound)
+                if (A is enemyCharger && !A.pathFound)
+                {
+                    found = false;
+                    targetFound = false;
+                    openList.Clear();
+                    closedList.Clear();
+                    shortestPath.Clear();
+                    for (int i = 0; i < (GraphicsDevice.Viewport.Height); i++)
+                    {
+
+                        for (int j = 0; j < (GraphicsDevice.Viewport.Width); j++)
+                        {
+                            grid[i][j].open = false;
+                            grid[i][j].closed = false;
+                        }
+                    }
+
+
+
+                    initialFindPathCharger();
+                    A.pathFound = found;
+                    A.FollowPath.AddRange(shortestPath);
+                }
+                
+                else if (!A.pathFound)
                 {
                     found = false;
                     targetFound = false;
@@ -400,6 +433,8 @@ namespace WindowsGame1
                 foreach (player A in enemy)
                 {
                     spriteBatch.Draw(A.playerSprite, A.spritePosition, null, Color.White, A.Rotation, A.spriteCenter, 1f, SpriteEffects.None, 0);
+                    spriteBatch.Draw(healthBar, new Rectangle((int)A.spritePosition.X-25,(int)A.spritePosition.Y-30,(int)(50*((double)A.health/100)),4),Color.Red);
+                    
                 }
             }
             if (turretList.Count != 0)
@@ -464,7 +499,157 @@ namespace WindowsGame1
             base.Draw(gameTime);
         }
 
+        public void initialFindPathCharger()
+        {
+            if (enemyExist && targetExist && !targetFound)
+            {
 
+                int curX, curY;
+
+                //use the player's current location as the start node
+                curX = (int)grid[3][0].center.Y / 50;
+                curY = (int)grid[3][0].center.X / 50;
+                startX = curX;
+                startY = curY;
+                grid[curX][curY].cost = 0;
+                grid[curX][curY].heu = Math.Abs(targetX - (curX)) + Math.Abs(targetY - (curY));
+                grid[curX][curY].total = grid[curX][curY].cost + grid[curX][curY].heu;
+                grid[curX][curY].open = true;
+                openList.Add(grid[curX][curY]);
+
+                //first run through initializing the open lists with all adjacent nodes thats not a wall
+                //bot
+                if (curX + 1 > -1 && curX + 1 < gridBoundX && curY > -1 && curY < gridBoundY  && !grid[curX + 1][curY].closed)
+                {
+                    grid[curX + 1][curY].parentTile = grid[curX][curY];
+                    grid[curX + 1][curY].cost = 10;
+                    grid[curX + 1][curY].heu = Math.Abs(targetX - (curX + 1)) + Math.Abs(targetY - (curY));
+                    grid[curX + 1][curY].total = grid[curX + 1][curY].cost + grid[curX + 1][curY].heu;
+                    grid[curX + 1][curY].open = true;
+                    if (grid[curX + 1][curY].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX + 1][curY]);
+                        targetFound = true;
+                    }
+                    if (!targetFound)
+                    {
+                        openList.Add(grid[curX + 1][curY]);
+                    }
+                    tempb = grid[curX + 1][curY].total;
+                }
+
+
+                //top
+                if (curX - 1 > -1 && curX - 1 < gridBoundX && curY > -1 && curY < gridBoundY  && !grid[curX - 1][curY].closed)
+                {
+                    grid[curX - 1][curY].parentTile = grid[curX][curY];
+                    grid[curX - 1][curY].cost = 10;
+                    grid[curX - 1][curY].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY));
+                    grid[curX - 1][curY].total = grid[curX - 1][curY].cost + grid[curX - 1][curY].heu;
+                    grid[curX - 1][curY].open = true;
+                    if (grid[curX - 1][curY].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX - 1][curY]);
+                        targetFound = true;
+                    }
+                    if (!targetFound)
+                    {
+                        openList.Add(grid[curX - 1][curY]);
+                    }
+                    tempt = grid[curX - 1][curY].total;
+                }
+
+                //left
+                if (curX > -1 && curX < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY  && !grid[curX][curY - 1].closed)
+                {
+                    grid[curX][curY - 1].parentTile = grid[curX][curY];
+                    grid[curX][curY - 1].cost = 10;
+                    grid[curX][curY - 1].heu = Math.Abs(targetX - (curX)) + Math.Abs(targetY - (curY - 1));
+                    grid[curX][curY - 1].total = grid[curX][curY - 1].cost + grid[curX][curY - 1].heu;
+                    grid[curX][curY - 1].open = true;
+                    if (grid[curX][curY - 1].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX][curY - 1]);
+                        targetFound = true;
+                    }
+                    if (!targetFound)
+                    {
+                        openList.Add(grid[curX][curY - 1]);
+                    }
+                    templ = grid[curX][curY - 1].total;
+                }
+                //right
+                if (curX > -1 && curX < gridBoundX && curY + 1 > -1 && curY + 1 < gridBoundY  && !grid[curX][curY + 1].closed)
+                {
+                    grid[curX][curY + 1].parentTile = grid[curX][curY];
+                    grid[curX][curY + 1].cost = 10;
+                    grid[curX][curY + 1].heu = Math.Abs(targetX - (curX)) + Math.Abs(targetY - (curY + 1));
+                    grid[curX][curY + 1].total = grid[curX][curY + 1].cost + grid[curX][curY + 1].heu;
+                    grid[curX][curY + 1].open = true;
+                    if (grid[curX][curY + 1].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX][curY + 1]);
+                        targetFound = true;
+                    }
+                    if (!targetFound)
+                    {
+                        openList.Add(grid[curX][curY + 1]);
+                    }
+                    tempr = grid[curX][curY + 1].total;
+                }
+                if (!targetFound)
+                {
+                    grid[curX][curY].closed = true;
+
+                    //move the current node to closed list after evaluating all adjacent nodes
+                    closedList.Add(grid[curX][curY]);
+                    openList.RemoveAt(0);
+
+                    //loop through the rest of the nodes in open list
+                    findPathCharger(curX, curY);
+                }
+
+                //if target found traverse the shortest path through the close nodes
+                //each node is linked to a parent, so the shortest path is the link of parents from the target node
+                if (targetFound)
+                {
+                    tempX = targetX;
+                    tempY = targetY;
+                    int placeholderX = tempX, placeholderY = tempY;
+                    while (true)
+                    {
+                        if (tempX == startX && tempY == startY)
+                        {
+                            shortestPath.Reverse();
+
+                            found = true;
+                            break;
+                        }
+                        shortestPath.Add(grid[tempX][tempY]);
+
+                        placeholderX = tempX;
+                        placeholderY = tempY;
+                        tempX = grid[placeholderX][placeholderY].parentTile.coordX;
+                        tempY = grid[placeholderX][placeholderY].parentTile.coordY;
+
+                    }
+
+                }
+
+
+            }
+        }
+        
+        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      
         public void initialFindPath()
         {
             if (enemyExist && targetExist && !targetFound)
@@ -505,52 +690,8 @@ namespace WindowsGame1
                     }
                     tempb = grid[curX + 1][curY].total;
                 }
-                //bot right
-                /* if ( curX + 1 > -1 && curX + 1 < gridBoundX && curY + 1 > -1 && curY + 1<gridBoundY&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed)
-                 {
-                     grid[curX + 1][curY+1].parentTile = grid[curX][curY];
-                     grid[curX + 1][curY + 1].cost = 14;
-                     grid[curX + 1][curY+1].heu = Math.Abs(targetX-(curX + 1)) + Math.Abs(targetY - (curY+1));
-                     grid[curX + 1][curY+1].total = grid[curX + 1][curY+1].cost+grid[curX + 1][curY+1].heu;
-                     grid[curX + 1][curY + 1].open = true;
-                     if (grid[curX + 1][curY+1].target)
-                     {
-                         grid[curX][curY].closed = true;
-                         closedList.Add(grid[curX][curY]);
-                         closedList.Add(grid[curX + 1][curY+1]);
-                         targetFound = true;
-                     }
-                     if (!targetFound)
-                     {
-                         openList.Add(grid[curX + 1][curY+1]);
-                     }
-                     tempbr = grid[curX + 1][curY + 1].total;
-                   
-                 }
+
                
-                 //bot left
-                 if (curX+1>-1 && curX+1< gridBoundX && curY-1>-1 && curY<gridBoundY&&!grid[curX + 1][curY - 1].blocked && !grid[curX + 1][curY - 1].closed)
-                 {
-                     grid[curX+1][curY-1].parentTile = grid[curX][curY];
-                     grid[curX + 1][curY - 1].cost = 14;
-                     grid[curX + 1][curY - 1].heu = Math.Abs(targetX - (curX + 1)) + Math.Abs(targetY - (curY - 1));
-                     grid[curX + 1][curY - 1].total = grid[curX + 1][curY - 1].cost + grid[curX + 1][curY - 1].heu;
-                     grid[curX + 1][curY - 1].open = true;
-                     if (grid[curX + 1][curY - 1].target)
-                     {
-                         grid[curX][curY].closed = true;
-                         closedList.Add(grid[curX][curY]);
-                         closedList.Add(grid[curX + 1][curY - 1]);
-                         targetFound = true;
-                     }
-                     if (!targetFound)
-                     {
-                         openList.Add(grid[curX + 1][curY - 1]);
-                     }
-                   
-                     tempbl = grid[curX + 1][curY - 1].total;
-                 }
-                 */
                 //top
                 if (curX - 1 > -1 && curX - 1 < gridBoundX && curY > -1 && curY < gridBoundY && !grid[curX - 1][curY].blocked && !grid[curX - 1][curY].closed)
                 {
@@ -572,51 +713,7 @@ namespace WindowsGame1
                     }
                     tempt = grid[curX - 1][curY].total;
                 }
-                /*
-                //top left
-                if ( curX - 1 > -1 && curX - 1 < gridBoundX && curY - 1 > -1 && curY - 1<gridBoundY&&!grid[curX - 1][curY - 1].blocked && !grid[curX - 1][curY - 1].closed )
-                {
-                    grid[curX - 1][curY-1].parentTile = grid[curX][curY];
-                    grid[curX - 1][curY-1].cost = 14;
-                    grid[curX - 1][curY - 1].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY - 1));
-                    grid[curX - 1][curY - 1].total = grid[curX - 1][curY - 1].cost + grid[curX - 1][curY - 1].heu;
-                    grid[curX - 1][curY - 1].open = true;
-                    if (grid[curX - 1][curY - 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX - 1][curY - 1]);
-                        targetFound = true;
-                    }
-                    if (!targetFound)
-                    {
-                        openList.Add(grid[curX - 1][curY - 1]);
-                    }
-                    temptl = grid[curX - 1][curY - 1].total;
-                }
-
-                //top right
-                if (curX - 1 > -1&&curX - 1 < gridBoundX && curY + 1 > -1 && curY + 1<gridBoundY&&!grid[curX - 1][curY + 1].blocked && !grid[curX - 1][curY + 1].closed   )
-                {
-                    grid[curX-1][curY+1].parentTile = grid[curX][curY];
-                    grid[curX-1][curY+1].cost = 14;
-                    grid[curX - 1][curY + 1].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY + 1));
-                    grid[curX - 1][curY + 1].total = grid[curX - 1][curY + 1].cost + grid[curX - 1][curY + 1].heu;
-                    grid[curX - 1][curY + 1].open = true;
-                    if (grid[curX - 1][curY + 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX - 1][curY + 1]);
-                        targetFound = true;
-                    }
-                    if (!targetFound)
-                    {
-                        openList.Add(grid[curX - 1][curY + 1]);
-                    }
-                    temptr = grid[curX - 1][curY + 1].total;
-                }
-                 */
+                
                 //left
                 if (curX > -1 && curX < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY && !grid[curX][curY - 1].blocked && !grid[curX][curY - 1].closed)
                 {
@@ -889,6 +986,183 @@ namespace WindowsGame1
             prevkeyboard = Keyboard.GetState();
         }
 
+        public void findPathCharger(int curX, int curY)
+        {
+            int selectedIndex;
+            int lowestTotal = 0;
+            while (targetFound == false)
+            {
+                //find the lowest total cost of all the node in open list and pick it as the selected node
+                selectedIndex = 0;
+                if (openList.Count > 0)
+                {
+                    lowestTotal = openList[0].total;
+                }
+
+                for (int i = 0; i < openList.Count; i++)
+                {
+                    if (openList[i].total < lowestTotal)
+                    {
+                        lowestTotal = openList[i].total;
+                        selectedIndex = i;
+                    }
+                }
+
+                if (openList.Count > 0)
+                {
+                    curX = openList[selectedIndex].coordX;
+                    curY = openList[selectedIndex].coordY;
+                }
+
+
+                if (grid[curX][curY].target)
+                {
+                    closedList.Add(grid[curX][curY]);
+                    targetFound = true;
+
+                    break;
+                }
+
+                //using the selected node go through all its adjacent node and add to open list unless already added or its a wall.
+                //bot
+                if (curX + 1 < gridBoundX && curX + 1 > -1 && curY > -1 && curY < gridBoundY  && !grid[curX + 1][curY].closed && !grid[curX + 1][curY].open)
+                {
+                    grid[curX + 1][curY].parentTile = grid[curX][curY];
+                    grid[curX + 1][curY].cost = grid[curX][curY].cost + 10;
+                    grid[curX + 1][curY].heu = Math.Abs(targetX - (curX + 1)) + Math.Abs(targetY - (curY));
+                    grid[curX + 1][curY].total = grid[curX + 1][curY].cost + grid[curX + 1][curY].heu;
+                    grid[curX + 1][curY].open = true;
+
+                    //if the adjacent node is the target then add to closed list and break from loop
+                    if (grid[curX + 1][curY].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        grid[curX + 1][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX + 1][curY]);
+                        targetFound = true;
+
+                        break;
+                    }
+                    openList.Add(grid[curX + 1][curY]);
+                }
+                else if (curX + 1 < gridBoundX && curX + 1 > -1 && curY > -1 && curY < gridBoundY  && !grid[curX + 1][curY].closed && grid[curX + 1][curY].open)
+                {
+                    if (grid[curX][curY].cost + 10 < grid[curX + 1][curY].cost)
+                    {
+                        grid[curX + 1][curY].parentTile = grid[curX][curY];
+                        grid[curX + 1][curY].cost = grid[curX][curY].cost + 10;
+                        grid[curX + 1][curY].total = grid[curX + 1][curY].cost + grid[curX + 1][curY].heu;
+                        openList[openList.IndexOf(grid[curX + 1][curY])] = grid[curX + 1][curY];
+                    }
+                }
+
+                //top
+                if (curX - 1 > -1 && curX - 1 < gridBoundX && curY > -1 && curY < gridBoundY  && !grid[curX - 1][curY].closed && !grid[curX - 1][curY].open)
+                {
+                    grid[curX - 1][curY].parentTile = grid[curX][curY];
+                    grid[curX - 1][curY].cost = grid[curX][curY].cost + 10;
+                    grid[curX - 1][curY].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY));
+                    grid[curX - 1][curY].total = grid[curX - 1][curY].cost + grid[curX - 1][curY].heu;
+                    grid[curX - 1][curY].open = true;
+                    if (grid[curX - 1][curY].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX - 1][curY]);
+                        targetFound = true;
+
+                        break;
+                    }
+                    openList.Add(grid[curX - 1][curY]);
+                }
+                else if (curX - 1 > -1 && curX - 1 < gridBoundX && curY > -1 && curY < gridBoundY  && !grid[curX - 1][curY].closed && grid[curX - 1][curY].open)
+                {
+                    if (grid[curX][curY].cost + 10 < grid[curX - 1][curY].cost)
+                    {
+                        grid[curX - 1][curY].parentTile = grid[curX][curY];
+                        grid[curX - 1][curY].cost = grid[curX][curY].cost + 10;
+                        grid[curX - 1][curY].total = grid[curX - 1][curY].cost + grid[curX - 1][curY].heu;
+                        openList[openList.IndexOf(grid[curX - 1][curY])] = grid[curX - 1][curY];
+                    }
+                }
+
+                //left
+                if (curX > -1 && curX < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY  && !grid[curX][curY - 1].closed && !grid[curX][curY - 1].open)
+                {
+                    grid[curX][curY - 1].parentTile = grid[curX][curY];
+                    grid[curX][curY - 1].cost = grid[curX][curY].cost + 10;
+                    grid[curX][curY - 1].heu = Math.Abs(targetX - (curX)) + Math.Abs(targetY - (curY - 1));
+                    grid[curX][curY - 1].total = grid[curX][curY - 1].cost + grid[curX][curY - 1].heu;
+                    grid[curX][curY - 1].open = true;
+                    if (grid[curX][curY - 1].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX][curY - 1]);
+                        targetFound = true;
+
+                        break;
+                    }
+                    openList.Add(grid[curX][curY - 1]);
+                }
+                else if (curX > -1 && curX < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY  && !grid[curX][curY - 1].closed && grid[curX][curY - 1].open)
+                {
+                    if (grid[curX][curY].cost + 10 < grid[curX][curY - 1].cost)
+                    {
+                        grid[curX][curY - 1].parentTile = grid[curX][curY];
+                        grid[curX][curY - 1].cost = grid[curX][curY].cost + 10;
+                        grid[curX][curY - 1].total = grid[curX][curY - 1].cost + grid[curX][curY - 1].heu;
+                        openList[openList.IndexOf(grid[curX][curY - 1])] = grid[curX][curY - 1];
+                    }
+                }
+                //right
+                if (curX > -1 && curX < gridBoundX && curY + 1 < gridBoundY && curY + 1 > -1 && !grid[curX][curY + 1].closed && !grid[curX][curY + 1].open)
+                {
+                    grid[curX][curY + 1].parentTile = grid[curX][curY];
+                    grid[curX][curY + 1].cost = grid[curX][curY].cost + 10;
+                    grid[curX][curY + 1].heu = Math.Abs(targetX - (curX)) + Math.Abs(targetY - (curY + 1));
+                    grid[curX][curY + 1].total = grid[curX][curY + 1].cost + grid[curX][curY + 1].heu;
+                    grid[curX][curY + 1].open = true;
+                    if (grid[curX][curY + 1].target)
+                    {
+                        grid[curX][curY].closed = true;
+                        closedList.Add(grid[curX][curY]);
+                        closedList.Add(grid[curX][curY + 1]);
+                        targetFound = true;
+
+                        break;
+                    }
+                    openList.Add(grid[curX][curY + 1]);
+                }
+                else if (curX > -1 && curX < gridBoundX && curY + 1 < gridBoundY && curY + 1 > -1  && !grid[curX][curY + 1].closed && grid[curX][curY + 1].open)
+                {
+                    if (grid[curX][curY].cost + 10 < grid[curX][curY + 1].cost)
+                    {
+                        grid[curX][curY + 1].parentTile = grid[curX][curY];
+                        grid[curX][curY + 1].cost = grid[curX][curY].cost + 10;
+                        grid[curX][curY + 1].total = grid[curX][curY + 1].cost + grid[curX][curY + 1].heu;
+                        openList[openList.IndexOf(grid[curX][curY + 1])] = grid[curX][curY + 1];
+                    }
+                }
+                grid[curX][curY].closed = true;
+
+                //move the selected node into closed list after inspecting all its adjacent nodes
+                closedList.Add(grid[curX][curY]);
+
+
+                if (openList.Count > 0)
+                {
+                    //remove the current selected node from open list
+                    openList.RemoveAt(selectedIndex);
+                }
+
+            }
+
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         //rest of the A* alorithm loop
         public void findPath(int curX, int curY)
         {
@@ -960,67 +1234,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX + 1][curY])] = grid[curX + 1][curY];
                     }
                 }
-                /*
-                //bot right
-                if (curX + 1 > -1 && curX + 1 < gridBoundX && curY + 1 < gridBoundY && curY + 1>-1&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed && !grid[curX + 1][curY + 1].open)
-                {
-                    grid[curX + 1][curY + 1].parentTile = grid[curX][curY];
-                    grid[curX + 1][curY + 1].cost = grid[curX][curY].cost+14;
-                    grid[curX + 1][curY + 1].heu = Math.Abs(targetX - (curX + 1)) + Math.Abs(targetY - (curY + 1));
-                    grid[curX + 1][curY + 1].total = grid[curX + 1][curY + 1].cost + grid[curX + 1][curY + 1].heu;
-                    grid[curX + 1][curY + 1].open = true;
-                    if (grid[curX + 1][curY + 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX + 1][curY + 1]);
-                        targetFound = true;
-
-                        break;
-                    }
-                    
-                    openList.Add(grid[curX + 1][curY + 1]);
-                }
-                else if (curX + 1 > -1 && curX + 1 < gridBoundX && curY + 1 < gridBoundY && curY + 1 > -1&&!grid[curX + 1][curY + 1].blocked && !grid[curX + 1][curY + 1].closed && grid[curX + 1][curY + 1].open)
-                {
-                    if (grid[curX][curY].cost + 14 < grid[curX + 1][curY + 1].cost)
-                    {
-                        grid[curX + 1][curY + 1].parentTile = grid[curX][curY];
-                        grid[curX + 1][curY + 1].cost = grid[curX][curY].cost + 14;
-                        grid[curX + 1][curY + 1].total = grid[curX + 1][curY + 1].cost + grid[curX + 1][curY + 1].heu;
-                        openList[openList.IndexOf(grid[curX + 1][curY + 1])] = grid[curX + 1][curY + 1];
-                    }
-                }
-                //bot left
-                if (curX + 1 > -1 && curX + 1 < gridBoundX && curY - 1 > -1 && curY - 1<gridBoundY&&!grid[curX + 1][curY - 1].blocked && !grid[curX + 1][curY - 1].closed && !grid[curX + 1][curY - 1].open )
-                {
-                    grid[curX + 1][curY - 1].parentTile = grid[curX][curY];
-                    grid[curX + 1][curY - 1].cost = grid[curX][curY].cost+14;
-                    grid[curX + 1][curY - 1].heu = Math.Abs(targetX - (curX + 1)) + Math.Abs(targetY - (curY - 1));
-                    grid[curX + 1][curY - 1].total = grid[curX + 1][curY - 1].cost + grid[curX + 1][curY - 1].heu;
-                    grid[curX + 1][curY - 1].open = true;
-                    if (grid[curX + 1][curY - 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX + 1][curY - 1]);
-                        targetFound = true;
-
-                        break;
-                    }
-                    openList.Add(grid[curX + 1][curY - 1]);
-                }
-                else if ( curX + 1 > -1 && curX + 1 < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY&&!grid[curX + 1][curY - 1].blocked && !grid[curX + 1][curY - 1].closed && grid[curX + 1][curY - 1].open )
-                {
-                    if (grid[curX][curY].cost + 14 < grid[curX + 1][curY - 1].cost)
-                    {
-                        grid[curX + 1][curY - 1].parentTile = grid[curX][curY];
-                        grid[curX + 1][curY - 1].cost = grid[curX][curY].cost + 14;
-                        grid[curX + 1][curY - 1].total = grid[curX + 1][curY - 1].cost + grid[curX + 1][curY - 1].heu;
-                        openList[openList.IndexOf(grid[curX + 1][curY - 1])] = grid[curX + 1][curY - 1];
-                    }
-                }
-                 */
+                
                 //top
                 if (curX - 1 > -1 && curX - 1 < gridBoundX && curY > -1 && curY < gridBoundY && !grid[curX - 1][curY].blocked && !grid[curX - 1][curY].closed && !grid[curX - 1][curY].open)
                 {
@@ -1050,67 +1264,7 @@ namespace WindowsGame1
                         openList[openList.IndexOf(grid[curX - 1][curY])] = grid[curX - 1][curY];
                     }
                 }
-                /*
-                //top left
-                if ( curX - 1 < gridBoundX && curX - 1 > -1 && curY - 1 > -1 && curY - 1<gridBoundY&&!grid[curX - 1][curY - 1].blocked && !grid[curX - 1][curY - 1].closed && !grid[curX - 1][curY - 1].open )
-                {
-                    grid[curX - 1][curY - 1].parentTile = grid[curX][curY];
-                    grid[curX - 1][curY - 1].cost = grid[curX][curY].cost+14;
-                    grid[curX - 1][curY - 1].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY - 1));
-                    grid[curX - 1][curY - 1].total = grid[curX - 1][curY - 1].cost + grid[curX - 1][curY - 1].heu;
-                    grid[curX - 1][curY - 1].open = true;
-                    if (grid[curX - 1][curY - 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX - 1][curY - 1]);
-                        targetFound = true;
-
-                        break;
-                    }
-                    openList.Add(grid[curX - 1][curY - 1]);
-                }
-                else if ( curX - 1 < gridBoundX && curX - 1 > -1 && curY - 1 > -1 && curY - 1 < gridBoundY&&!grid[curX - 1][curY - 1].blocked && !grid[curX - 1][curY - 1].closed && grid[curX - 1][curY - 1].open )
-                {
-                    if (grid[curX][curY].cost + 14 < grid[curX - 1][curY - 1].cost)
-                    {
-                        grid[curX - 1][curY - 1].parentTile = grid[curX][curY];
-                        grid[curX - 1][curY - 1].cost = grid[curX][curY].cost + 14;
-                        grid[curX - 1][curY - 1].total = grid[curX - 1][curY - 1].cost + grid[curX - 1][curY - 1].heu;
-                        openList[openList.IndexOf(grid[curX - 1][curY - 1])] = grid[curX - 1][curY - 1];
-                    }
-                }
-
-                //top right
-                if ( curX - 1<gridBoundX&& curX - 1 > -1 && curY + 1>-1&&curY + 1<gridBoundY&&!grid[curX - 1][curY + 1].blocked && !grid[curX - 1][curY + 1].closed && !grid[curX - 1][curY + 1].open )
-                {
-                    grid[curX - 1][curY + 1].parentTile = grid[curX][curY];
-                    grid[curX - 1][curY + 1].cost = grid[curX][curY].cost+14;
-                    grid[curX - 1][curY + 1].heu = Math.Abs(targetX - (curX - 1)) + Math.Abs(targetY - (curY + 1));
-                    grid[curX - 1][curY + 1].total = grid[curX - 1][curY + 1].cost + grid[curX - 1][curY + 1].heu;
-                    grid[curX - 1][curY + 1].open = true;
-                    if (grid[curX - 1][curY + 1].target)
-                    {
-                        grid[curX][curY].closed = true;
-                        closedList.Add(grid[curX][curY]);
-                        closedList.Add(grid[curX - 1][curY + 1]);
-                        targetFound = true;
-
-                        break;
-                    }
-                    openList.Add(grid[curX - 1][curY + 1]);
-                }
-                else if ( curX - 1 < gridBoundX && curX - 1 > -1 && curY + 1 >-1 && curY + 1 < gridBoundY&&!grid[curX - 1][curY + 1].blocked && !grid[curX - 1][curY + 1].closed && grid[curX - 1][curY + 1].open )
-                {
-                    if (grid[curX][curY].cost + 14 < grid[curX - 1][curY + 1].cost)
-                    {
-                        grid[curX - 1][curY + 1].parentTile = grid[curX][curY];
-                        grid[curX - 1][curY + 1].cost = grid[curX][curY].cost + 14;
-                        grid[curX - 1][curY + 1].total = grid[curX - 1][curY + 1].cost + grid[curX - 1][curY + 1].heu;
-                        openList[openList.IndexOf(grid[curX - 1][curY + 1])] = grid[curX - 1][curY + 1];
-                    }
-                }
-                 */
+                
                 //left
                 if (curX > -1 && curX < gridBoundX && curY - 1 > -1 && curY - 1 < gridBoundY && !grid[curX][curY - 1].blocked && !grid[curX][curY - 1].closed && !grid[curX][curY - 1].open)
                 {
